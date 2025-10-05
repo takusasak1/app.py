@@ -47,8 +47,8 @@ def parse_pj_and_text(form) -> Tuple[str, str]:
     text は "pj名 残りテキスト" の形式（例: "pjshin ローデータ完了"）
     """
     command = (form.get("command") or "").strip()
-    if command != "/prm":
-        # /prm 以外は受け付けない
+    if command != "/gameprm":
+        # /gameprm 以外は受け付けない
         return "", (form.get("text") or "").strip()
 
     text = (form.get("text") or "").strip()
@@ -105,7 +105,7 @@ def slack_handler():
 
     pj, rest = parse_pj_and_text(request.form)
     if not pj:
-        usage = "使い方: `/prm pjshin ローデータ完了`"
+        usage = "使い方: `/gameprm pjshin ローデータ完了`"
         return f"pj が見つかりません。{usage}", 200
 
     if ALLOWLIST_PJS and pj not in ALLOWLIST_PJS:
@@ -113,7 +113,7 @@ def slack_handler():
 
     if not check_passphrase(pj, rest):
         phrase = PASSPHRASE_BY_PJ.get(pj) or PASSPHRASE or "（未設定）"
-        return f"愛言葉が違います。`{phrase}` を含めて送ってください。", 200
+        return f"違います。`{phrase}` を含めて送ってください。", 200
 
     status, body = run_job(pj)
     if 200 <= status < 300:
