@@ -98,7 +98,34 @@ def run_job(pj: str):
 # ======= ルーティング =======
 @app.route("/slack", methods=["POST"])
 def slack_handler():
-   return "ok", 200
+   import threading
+
+@app.route("/slack", methods=["POST"])
+def slack_handler():
+    # --- 署名検証（エラーでも 200 を返し、Slackのdispatch_failedは避ける）---
+    try:
+        verify_slack(request)
+    except Exception:
+        return "署名検証エラー。Signing Secret と Request URL（/slack）を確認してください。", 200
+
+    # --- 使い方・制限 ---
+    if not is_channel_allowed(request.form):
+        return "このチャンネルでは実行できません。", 200
+
+    pj, rest = parse_pj_and_text(request.form)
+    if not pj:
+        return "使い方: `/gameprm pjshin ローデータ完了`", 200
+
+    if ALLOWLIST_PJS and pj not in ALLOWLIST_PJS:
+        return f"許可されていない pj です: `{pj}`", 200
+
+    if not check_passphrase(pj, rest):
+        phrase = PASSPHRASE_BY_PJ.get(pj) or PASSPHRASE or "（未設定）"
+        return f"愛言葉が違います。`{phrase}` を含めて送ってください。", 200
+
+    # --- 即時ACKして裏で起動 ---
+    threading.Thread(target=run_job, args=(pj,), daemon=True).start()
+    return f"✅ `{pj}` のジョブ起動リクエストを受け付けました。", 200
 
 
 @app.route("/")
