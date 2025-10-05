@@ -98,27 +98,7 @@ def run_job(pj: str):
 # ======= ルーティング =======
 @app.route("/slack", methods=["POST"])
 def slack_handler():
-    verify_slack(request)
-
-    # チャンネル制限（任意）
-    if not is_channel_allowed(request.form):
-        return "このチャンネルでは実行できません。", 200
-
-    pj, rest = parse_pj_and_text(request.form)
-    if not pj:
-        usage = "使い方: `/gameprm pjshin ローデータ完了`"
-        return f"pj が見つかりません。{usage}", 200
-
-    if ALLOWLIST_PJS and pj not in ALLOWLIST_PJS:
-        return f"許可されていない pj です: `{pj}`", 200
-
-    if not check_passphrase(pj, rest):
-        phrase = PASSPHRASE_BY_PJ.get(pj) or PASSPHRASE or "（未設定）"
-        return f"合言葉が違います。`{phrase}` を含めて送ってください。", 200
-
-    # ←ここがポイント：ジョブ起動は別スレッドで実行し、Slackには即200を返す
-    threading.Thread(target=run_job, args=(pj,), daemon=True).start()
-    return f"✅ `{pj}` のジョブ起動リクエストを受け付けました。数分後に結果がSlackへ投稿されます。", 200
+   return "ok", 200
 
 
 @app.route("/")
