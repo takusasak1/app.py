@@ -1,3 +1,4 @@
+import threading
 import os, time, hmac, hashlib, re, json
 from typing import Tuple
 from flask import Flask, request, abort
@@ -113,13 +114,11 @@ def slack_handler():
 
     if not check_passphrase(pj, rest):
         phrase = PASSPHRASE_BY_PJ.get(pj) or PASSPHRASE or "（未設定）"
-        return f"違います。`{phrase}` を含めて送ってください。", 200
+        return f"合言葉が違います。`{phrase}` を含めて送ってください。", 200
 
-    status, body = run_job(pj)
-    if 200 <= status < 300:
-        return f"✅ `{pj}` のジョブを起動しました。数分後に結果がSlackへ投稿されます。", 200
-    else:
-        return f"⚠️ 起動に失敗しました（{status}）。管理者に連絡してください。\n{body}", 200
+    # ←ここがポイント：ジョブ起動は別スレッドで実行し、Slackには即200を返す
+    threading.Thread(target=run_job, args=(pj,), daemon=True).start()
+    return f"✅ `{pj}` のジョブ起動リクエストを受け付けました。数分後に結果がSlackへ投稿されます。", 200
 
 
 @app.route("/")
